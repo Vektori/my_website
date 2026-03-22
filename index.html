@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Martti Kims — Developer</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: #00241B;
+        font-family: 'Outfit', sans-serif;
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+
+      /* ─── KEYFRAMES ─────────────────────────────────────── */
+      @keyframes fadeUp   { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+      @keyframes pulse    { 0%,100%{opacity:.6} 50%{opacity:1} }
+      @keyframes scanline { 0%{transform:translateY(-100%)} 100%{transform:translateY(100vh)} }
+      @keyframes spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      @keyframes draw     { from{stroke-dashoffset:1000} to{stroke-dashoffset:0} }
+      @keyframes blink    { 0%,100%{opacity:1} 49%{opacity:1} 50%{opacity:0} }
+      @keyframes glow     { 0%,100%{filter:drop-shadow(0 0 8px #00ECC1)} 50%{filter:drop-shadow(0 0 24px #00ECC1)} }
+      @keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+      /* ─── FULL PAGE SVG WRAPPER ─────────────────────────── */
+      .page-svg {
+        width: 100vw;
+        min-height: 100vh;
+        display: block;
+      }
+
+      /* Scanline overlay */
+      .scanline {
+        position: fixed; top:0; left:0; width:100%; height:60px;
+        background: linear-gradient(transparent, rgba(0,236,193,0.03), transparent);
+        pointer-events: none; z-index: 100;
+        animation: scanline 6s linear infinite;
+      }
+
+      /* ─── SVG TEXT & ELEMENT ANIMATIONS ─────────────────── */
+      .hero-name    { animation: fadeUp .9s cubic-bezier(.22,1,.36,1) .1s both; }
+      .hero-role    { animation: fadeUp .9s cubic-bezier(.22,1,.36,1) .25s both; }
+      .hero-desc    { animation: fadeUp .9s cubic-bezier(.22,1,.36,1) .4s both; }
+      .hero-btns    { animation: fadeUp .9s cubic-bezier(.22,1,.36,1) .55s both; }
+      .card-1       { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) .65s both; }
+      .card-2       { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) .75s both; }
+      .card-3       { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) .85s both; }
+      .deco-ring    { animation: spin 18s linear infinite; transform-origin: center; transform-box: fill-box; }
+      .deco-ring2   { animation: spin 12s linear infinite reverse; transform-origin: center; transform-box: fill-box; }
+      .blob-1       { animation: float 7s ease-in-out infinite; }
+      .blob-2       { animation: float 9s ease-in-out infinite reverse; }
+      .path-draw    { stroke-dasharray:1000; stroke-dashoffset:1000; animation: draw 3s ease .3s forwards; }
+      .status-dot   { animation: pulse 2s ease infinite; }
+      .glow-ring    { animation: glow 3s ease-in-out infinite; }
+
+      /* ─── INTERACTIVE BUTTONS ───────────────────────────── */
+      .btn-main rect, .btn-ghost rect { transition: all .2s; }
+      .btn-main:hover rect { fill: #00ECC1; }
+      .btn-main:hover text { fill: #00241B; }
+      .btn-main text, .btn-ghost text { transition: fill .2s; }
+      .btn-ghost:hover rect { fill: rgba(0,236,193,.12); stroke: #00ECC1; }
+      .btn-ghost:hover text { fill: #00ECC1; }
+      .btn-main, .btn-ghost { cursor: pointer; }
+
+      /* ─── SKILL TAGS ────────────────────────────────────── */
+      .skill-tag rect { transition: all .2s; }
+      .skill-tag:hover rect { fill: rgba(0,236,193,.2); }
+      .skill-tag { cursor: default; }
+
+      /* ─── PROJECT CARDS ─────────────────────────────────── */
+      .proj-card { cursor: pointer; }
+      .proj-card .card-bg { transition: all .25s; }
+      .proj-card:hover .card-bg { fill: rgba(0,201,141,.12); }
+      .proj-card .card-border { transition: all .25s; }
+      .proj-card:hover .card-border { stroke: #00ECC1; opacity:1; }
+
+      /* ─── CURSOR ────────────────────────────────────────── */
+      #cursor {
+        position: fixed; top:0; left:0; width:12px; height:12px;
+        background: #00ECC1; border-radius:50%; pointer-events:none;
+        z-index:999; mix-blend-mode: difference;
+        transform: translate(-50%,-50%);
+        transition: width .15s, height .15s, opacity .15s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scanline"></div>
+    <div id="cursor"></div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FULL-PAGE SVG
+         ViewBox: 1440 × 900 — scales to any screen
+    ═══════════════════════════════════════════════════════ -->
+    <svg class="page-svg"
+         viewBox="0 0 1440 900"
+         preserveAspectRatio="xMidYMid meet"
+         xmlns="http://www.w3.org/2000/svg">
+
+      <!-- ╔══════════════════════════════╗
+           ║  DEFS                        ║
+           ╚══════════════════════════════╝ -->
+      <defs>
+        <!-- Background gradient -->
+        <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#00241B"/>
+          <stop offset="60%"  stop-color="#00241B"/>
+          <stop offset="100%" stop-color="#001510"/>
+        </linearGradient>
+
+        <!-- Teal accent glow -->
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="18" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glowSm" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="7" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glowLg" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="40" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        <!-- Card gradient -->
+        <linearGradient id="cardGrad1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"  stop-color="#00493A" stop-opacity=".35"/>
+          <stop offset="100%" stop-color="#00241B" stop-opacity=".8"/>
+        </linearGradient>
+        <linearGradient id="cardGrad2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"  stop-color="#00725C" stop-opacity=".25"/>
+          <stop offset="100%" stop-color="#00241B" stop-opacity=".9"/>
+        </linearGradient>
+        <linearGradient id="cardGrad3" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#00C09D" stop-opacity=".2"/>
+          <stop offset="100%" stop-color="#00241B" stop-opacity=".85"/>
+        </linearGradient>
+
+        <!-- Grid pattern -->
+        <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+          <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#00493A" stroke-width=".5" opacity=".4"/>
+        </pattern>
+
+        <!-- Dot pattern -->
+        <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill="#00725C" opacity=".35"/>
+        </pattern>
+
+        <!-- Clip for main content area -->
+        <clipPath id="mainClip">
+          <rect x="0" y="0" width="1440" height="900"/>
+        </clipPath>
+
+        <!-- Name gradient text -->
+        <linearGradient id="nameGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"  stop-color="#CEFFEF"/>
+          <stop offset="50%" stop-color="#00ECC1"/>
+          <stop offset="100%" stop-color="#00C09D"/>
+        </linearGradient>
+
+        <!-- Marker -->
+        <marker id="arrowTip" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#00C09D" opacity=".6"/>
+        </marker>
+      </defs>
+
+      <!-- ╔══════════════════════════════╗
+           ║  BACKGROUND                  ║
+           ╚══════════════════════════════╝ -->
+      <rect x="0" y="0" width="1440" height="900" fill="url(#bgGrad)"/>
+      <rect x="0" y="0" width="1440" height="900" fill="url(#grid)" opacity=".5"/>
+
+      <!-- Atmospheric blobs -->
+      <g class="blob-1">
+        <circle cx="200" cy="200" r="220" fill="#00725C" opacity=".08" filter="url(#glowLg)"/>
+      </g>
+      <g class="blob-2">
+        <circle cx="1280" cy="680" r="280" fill="#00493A" opacity=".12" filter="url(#glowLg)"/>
+      </g>
+      <circle cx="760" cy="450" r="180" fill="#00C09D" opacity=".04" filter="url(#glowLg)"/>
+
+      <!-- Decorative geometric rings (right side) -->
+      <g class="deco-ring" style="transform-origin:1180px 200px">
+        <circle cx="1180" cy="200" r="90" fill="none" stroke="#00725C" stroke-width="1" stroke-dasharray="6 12" opacity=".5"/>
+      </g>
+      <g class="deco-ring2" style="transform-origin:1180px 200px">
+        <circle cx="1180" cy="200" r="130" fill="none" stroke="#00493A" stroke-width=".8" stroke-dasharray="4 20" opacity=".4"/>
+      </g>
+      <circle cx="1180" cy="200" r="50" fill="none" stroke="#00ECC1" stroke-width="1.5" opacity=".3" class="glow-ring" filter="url(#glowSm)"/>
+      <circle cx="1180" cy="200" r="6" fill="#00ECC1" opacity=".7" filter="url(#glowSm)"/>
+
+      <!-- Decorative path lines -->
+      <path class="path-draw" d="M 0 450 Q 300 380 500 500 Q 700 620 900 480 Q 1100 340 1440 440"
+            fill="none" stroke="#00725C" stroke-width="1" opacity=".3" marker-end="url(#arrowTip)"/>
+
+      <!-- Dot pattern strip -->
+      <rect x="0" y="0" width="1440" height="900" fill="url(#dots)"/>
+
+      <!-- Vertical accent line left -->
+      <line x1="68" y1="100" x2="68" y2="820" stroke="#00725C" stroke-width="1" opacity=".5"/>
+      <line x1="68" y1="100" x2="78" y2="100" stroke="#00ECC1" stroke-width="2" opacity=".8"/>
+      <line x1="68" y1="820" x2="78" y2="820" stroke="#00ECC1" stroke-width="2" opacity=".4"/>
+
+      <!-- ╔══════════════════════════════╗
+           ║  NAVIGATION                  ║
+           ╚══════════════════════════════╝ -->
+      <g style="font-family:'DM Mono',monospace">
+        <!-- Nav bg line -->
+        <line x1="0" y1="60" x2="1440" y2="60" stroke="#00493A" stroke-width=".8" opacity=".8"/>
+
+        <!-- Logo / monogram -->
+        <text x="100" y="42" font-size="15" fill="#00ECC1" font-family="'DM Mono',monospace" font-weight="500" letter-spacing="4" opacity=".9">MK</text>
+        <text x="130" y="42" font-size="11" fill="#00725C" letter-spacing="1">_dev</text>
+
+        <!-- Nav items -->
+        <a href="#about">
+          <text x="900" y="40" font-size="12" fill="#CEFFEF" opacity=".6" letter-spacing="2"
+                style="cursor:pointer;transition:opacity .2s"
+                onmouseover="this.setAttribute('opacity',1)" onmouseout="this.setAttribute('opacity',.6)">ABOUT</text>
+        </a>
+        <a href="#skills">
+          <text x="980" y="40" font-size="12" fill="#CEFFEF" opacity=".6" letter-spacing="2"
+                style="cursor:pointer;transition:opacity .2s"
+                onmouseover="this.setAttribute('opacity',1)" onmouseout="this.setAttribute('opacity',.6)">SKILLS</text>
+        </a>
+        <a href="#projects">
+          <text x="1068" y="40" font-size="12" fill="#CEFFEF" opacity=".6" letter-spacing="2"
+                style="cursor:pointer;transition:opacity .2s"
+                onmouseover="this.setAttribute('opacity',1)" onmouseout="this.setAttribute('opacity',.6)">PROJECTS</text>
+        </a>
+        <a href="https://github.com/Vektori" target="_blank" rel="noreferrer">
+          <text x="1188" y="40" font-size="12" fill="#00ECC1" letter-spacing="2"
+                style="cursor:pointer" opacity=".9">GITHUB ↗</text>
+        </a>
+      </g>
+
+      <!-- ╔══════════════════════════════╗
+           ║  HERO SECTION                ║
+           ╚══════════════════════════════╝ -->
+
+      <!-- Status badge -->
+      <g class="hero-name">
+        <rect x="100" y="105" rx="20" ry="20" width="195" height="28" fill="#00493A" opacity=".5"/>
+        <circle cx="118" cy="119" r="5" fill="#00ECC1" class="status-dot" filter="url(#glowSm)"/>
+        <text x="132" y="124" font-size="11" fill="#00ECC1" font-family="'DM Mono',monospace" letter-spacing="1.5">AVAILABLE FOR WORK</text>
+      </g>
+
+      <!-- Main name -->
+      <g class="hero-name">
+        <text x="100" y="215"
+              font-size="88" fill="url(#nameGrad)"
+              font-family="'Syne',sans-serif" font-weight="800"
+              letter-spacing="-2" filter="url(#glowSm)">MARTTI</text>
+        <text x="100" y="305"
+              font-size="88" fill="#CEFFEF"
+              font-family="'Syne',sans-serif" font-weight="800"
+              letter-spacing="-2" opacity=".85">KIMS</text>
+      </g>
+
+      <!-- Role line -->
+      <g class="hero-role">
+        <text x="103" y="348" font-size="16" fill="#00C09D"
+              font-family="'DM Mono',monospace" letter-spacing="3">
+          DEVELOPER  ·  AUTOMATION  ·  AI
+        </text>
+      </g>
+
+      <!-- Divider -->
+      <g class="hero-desc">
+        <line x1="100" y1="368" x2="520" y2="368" stroke="#00725C" stroke-width="1" opacity=".7"/>
+      </g>
+
+      <!-- Description text -->
+      <g class="hero-desc">
+        <text x="100" y="398" font-size="16" fill="#CEFFEF" opacity=".75" font-family="'Outfit',sans-serif" font-weight="300">
+          Driven by deep technical curiosity and a passion
+        </text>
+        <text x="100" y="420" font-size="16" fill="#CEFFEF" opacity=".75" font-family="'Outfit',sans-serif" font-weight="300">
+          for building things that actually work.
+        </text>
+        <text x="100" y="452" font-size="15" fill="#00A87D" opacity=".9" font-family="'DM Mono',monospace">
+          Power Apps · Power Automate · Python · Copilot Studio
+        </text>
+      </g>
+
+      <!-- CTA Buttons -->
+      <g class="hero-btns">
+        <!-- Primary -->
+        <a href="https://github.com/Vektori" target="_blank" rel="noreferrer">
+          <g class="btn-main" transform="translate(100,478)">
+        <rect x="0" y="0" rx="6" ry="6" width="190" height="50"
+          fill="#00ECC1" stroke="none"/>
+        <text x="95" y="31" text-anchor="middle"
+          font-size="13" fill="#00241B" font-weight="500"
+          font-family="'DM Mono',monospace" letter-spacing="2">GITHUB ↗</text>
+          </g>
+        </a>
+        <!-- LinkedIn -->
+        <a href="https://www.linkedin.com/in/martti-kims-381883255/overlay/contact-info/" target="_blank" rel="noreferrer">
+          <g class="btn-main" transform="translate(304,478)">
+        <rect x="0" y="0" rx="6" ry="6" width="190" height="50"
+          fill="#00C09D" stroke="none"/>
+        <text x="95" y="31" text-anchor="middle"
+          font-size="13" fill="#00241B" font-weight="500"
+          font-family="'DM Mono',monospace" letter-spacing="2">LINKEDIN ↗</text>
+          </g>
+        </a>
+      </g>
+
+      <!-- ╔══════════════════════════════╗
+           ║  SKILLS SECTION (right hero) ║
+           ╚══════════════════════════════╝ -->
+      <g id="skills">
+        <!-- Section label -->
+        <text x="740" y="125" font-size="11" fill="#00725C" font-family="'DM Mono',monospace" letter-spacing="3">_SKILLS</text>
+        <line x1="740" y1="132" x2="900" y2="132" stroke="#00493A" stroke-width=".8"/>
+
+        <!-- Skill bars — rendered by JS below -->
+        <g id="skill-bars" font-family="'DM Mono',monospace"></g>
+
+        <!-- Skill tags -->
+        <g id="skills" font-family="'DM Mono',monospace" font-size="11" letter-spacing="1">
+          <text x="740" y="388" fill="#00725C" opacity=".6">_TAGS</text>
+
+          <!-- Row 1 -->
+          <g class="skill-tag" transform="translate(740,398)">
+            <rect x="0" y="0" rx="4" width="100" height="26" fill="rgba(0,114,92,.15)" stroke="#00493A" stroke-width=".8"/>
+            <text x="50" y="17" text-anchor="middle" fill="#00C09D">Power Apps</text>
+          </g>
+          <g class="skill-tag" transform="translate(850,398)">
+            <rect x="0" y="0" rx="4" width="90" height="26" fill="rgba(0,114,92,.15)" stroke="#00493A" stroke-width=".8"/>
+            <text x="45" y="17" text-anchor="middle" fill="#00C09D">Python</text>
+          </g>
+          <g class="skill-tag" transform="translate(950,398)">
+            <rect x="0" y="0" rx="4" width="115" height="26" fill="rgba(0,114,92,.15)" stroke="#00493A" stroke-width=".8"/>
+            <text x="57" y="17" text-anchor="middle" fill="#00C09D">Automation</text>
+          </g>
+
+          <!-- Row 2 -->
+          <g class="skill-tag" transform="translate(740,434)">
+            <rect x="0" y="0" rx="4" width="65" height="26" fill="rgba(0,73,58,.2)" stroke="#00493A" stroke-width=".8"/>
+            <text x="32" y="17" text-anchor="middle" fill="#00A87D">Azure</text>
+          </g>
+          <g class="skill-tag" transform="translate(815,434)">
+            <rect x="0" y="0" rx="4" width="75" height="26" fill="rgba(0,73,58,.2)" stroke="#00493A" stroke-width=".8"/>
+            <text x="37" y="17" text-anchor="middle" fill="#00A87D">Git</text>
+          </g>
+          <g class="skill-tag" transform="translate(900,434)">
+            <rect x="0" y="0" rx="4" width="90" height="26" fill="rgba(0,73,58,.2)" stroke="#00493A" stroke-width=".8"/>
+            <text x="45" y="17" text-anchor="middle" fill="#00A87D">REST API</text>
+          </g>
+          <g class="skill-tag" transform="translate(1000,434)">
+            <rect x="0" y="0" rx="4" width="65" height="26" fill="rgba(0,73,58,.2)" stroke="#00493A" stroke-width=".8"/>
+            <text x="32" y="17" text-anchor="middle" fill="#00A87D">SQL</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- ╔══════════════════════════════╗
+           ║  PROJECT CARDS               ║
+           ╚══════════════════════════════╝ -->
+      <g id="projects">
+        <!-- Section label -->
+        <text x="100" y="590" font-size="11" fill="#00725C" font-family="'DM Mono',monospace" letter-spacing="3">_PROJECTS</text>
+        <line x1="100" y1="597" x2="1340" y2="597" stroke="#00493A" stroke-width=".8"/>
+
+        <!-- ── Card 1: Power Apps SVG Builder -->
+        <g class="card-1">
+          <g class="proj-card" transform="translate(100,615)">
+            <rect class="card-bg" x="0" y="0" rx="10" ry="10" width="360" height="215" fill="url(#cardGrad1)"/>
+            <rect class="card-border" x="0" y="0" rx="10" ry="10" width="360" height="215"
+                  fill="none" stroke="#00725C" stroke-width=".8" opacity=".6"/>
+            <!-- Accent top bar -->
+            <rect x="0" y="0" rx="10" ry="10" width="360" height="4" fill="#00ECC1" opacity=".7"/>
+            <rect x="0" y="4" width="360" height="4" fill="#00ECC1" opacity=".7"/>
+
+            <!-- Number -->
+            <text x="20" y="42" font-size="32" fill="#00ECC1" font-family="'Syne',sans-serif" font-weight="800" opacity=".15">01</text>
+            <!-- Title -->
+            <text x="20" y="68" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">Power Apps</text>
+            <text x="20" y="91" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">SVG Builder</text>
+            <!-- Desc -->
+            <text x="20" y="118" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">Custom SVG component builder</text>
+            <text x="20" y="136" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">for Power Apps Canvas apps.</text>
+            <!-- Tags -->
+            <rect x="20" y="155" rx="4" width="90" height="22" fill="rgba(0,236,193,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="65" y="170" text-anchor="middle" font-size="10" fill="#00ECC1" font-family="'DM Mono',monospace">Power Apps</text>
+            <rect x="122" y="155" rx="4" width="55" height="22" fill="rgba(0,236,193,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="149" y="170" text-anchor="middle" font-size="10" fill="#00ECC1" font-family="'DM Mono',monospace">SVG</text>
+            <!-- Arrow -->
+            <text x="330" y="198" font-size="20" fill="#00ECC1" opacity=".5" font-family="'Outfit',sans-serif">→</text>
+          </g>
+        </g>
+
+        <!-- ── Card 2: AI Flow Generator -->
+        <g class="card-2">
+          <g class="proj-card" transform="translate(490,615)">
+            <rect class="card-bg" x="0" y="0" rx="10" ry="10" width="360" height="215" fill="url(#cardGrad2)"/>
+            <rect class="card-border" x="0" y="0" rx="10" ry="10" width="360" height="215"
+                  fill="none" stroke="#00725C" stroke-width=".8" opacity=".6"/>
+            <rect x="0" y="0" rx="10" ry="10" width="360" height="4" fill="#00C09D" opacity=".7"/>
+            <rect x="0" y="4" width="360" height="4" fill="#00C09D" opacity=".7"/>
+
+            <text x="20" y="42" font-size="32" fill="#00C09D" font-family="'Syne',sans-serif" font-weight="800" opacity=".15">02</text>
+            <text x="20" y="68" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">AI to Power</text>
+            <text x="20" y="91" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">Automate Flows</text>
+            <text x="20" y="118" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">Generate automation flows with</text>
+            <text x="20" y="136" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">AI assistance &amp; natural language.</text>
+
+            <rect x="20" y="155" rx="4" width="55" height="22" fill="rgba(0,192,157,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="47" y="170" text-anchor="middle" font-size="10" fill="#00C09D" font-family="'DM Mono',monospace">AI</text>
+            <rect x="86" y="155" rx="4" width="120" height="22" fill="rgba(0,192,157,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="146" y="170" text-anchor="middle" font-size="10" fill="#00C09D" font-family="'DM Mono',monospace">Power Automate</text>
+
+            <text x="330" y="198" font-size="20" fill="#00C09D" opacity=".5" font-family="'Outfit',sans-serif">→</text>
+          </g>
+        </g>
+
+        <!-- ── Card 3: AI Trading Bot -->
+        <g class="card-3">
+          <g class="proj-card" transform="translate(880,615)">
+            <rect class="card-bg" x="0" y="0" rx="10" ry="10" width="460" height="215" fill="url(#cardGrad3)"/>
+            <rect class="card-border" x="0" y="0" rx="10" ry="10" width="460" height="215"
+                  fill="none" stroke="#00725C" stroke-width=".8" opacity=".6"/>
+            <rect x="0" y="0" rx="10" ry="10" width="460" height="4" fill="#00A87D" opacity=".7"/>
+            <rect x="0" y="4" width="460" height="4" fill="#00A87D" opacity=".7"/>
+
+            <text x="20" y="42" font-size="32" fill="#00A87D" font-family="'Syne',sans-serif" font-weight="800" opacity=".15">03</text>
+            <text x="20" y="68" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">Python</text>
+            <text x="20" y="91" font-size="18" fill="#CEFFEF" font-family="'Syne',sans-serif" font-weight="700">FastAPI</text>
+            <text x="20" y="118" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">FastAPI endpoints powering real-time analytics and automation workflows</text>
+            <text x="20" y="136" font-size="13" fill="#CEFFEF" opacity=".6" font-family="'Outfit',sans-serif">models and real-time market data.</text>
+
+            <rect x="20" y="155" rx="4" width="60" height="22" fill="rgba(0,168,125,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="50" y="170" text-anchor="middle" font-size="10" fill="#00A87D" font-family="'DM Mono',monospace">Python</text>
+            <rect x="92" y="155" rx="4" width="40" height="22" fill="rgba(0,168,125,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="112" y="170" text-anchor="middle" font-size="10" fill="#00A87D" font-family="'DM Mono',monospace">SQL</text>
+            <rect x="144" y="155" rx="4" width="50" height="22" fill="rgba(0,168,125,.1)" stroke="#00725C" stroke-width=".6"/>
+            <text x="169" y="170" text-anchor="middle" font-size="10" fill="#00A87D" font-family="'DM Mono',monospace">API</text>
+
+            <text x="428" y="198" font-size="20" fill="#00A87D" opacity=".5" font-family="'Outfit',sans-serif">→</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- ╔══════════════════════════════╗
+           ║  FOOTER                      ║
+           ╚══════════════════════════════╝ -->
+      <line x1="0" y1="880" x2="1440" y2="880" stroke="#00493A" stroke-width=".6" opacity=".6"/>
+      <text x="100" y="894" font-size="11" fill="#00493A" font-family="'DM Mono',monospace">© <tspan id="year"></tspan> Martti Kims</text>
+      <text x="740" y="894" font-size="11" fill="#00493A" font-family="'DM Mono',monospace" text-anchor="middle">Built with SVG · GitHub Pages</text>
+      <a href="https://github.com/Vektori" target="_blank" rel="noreferrer">
+        <text x="1340" y="894" font-size="11" fill="#00725C" font-family="'DM Mono',monospace" text-anchor="end" style="cursor:pointer">github.com/Vektori ↗</text>
+      </a>
+
+      <!-- ╔══════════════════════════════╗
+           ║  INLINE SCRIPT               ║
+           ╚══════════════════════════════╝ -->
+      <script>
+        document.getElementById("year").textContent = new Date().getFullYear();
+
+        /* ─── ANIMATED SKILL BARS ────────────────────────── */
+        const skills = [
+          { label: "POWER APPS",    pct: 75, color: "#00ECC1", opacity: ".85" },
+          { label: "PYTHON",            pct: 50, color: "#00C09D", opacity: ".85" },
+          { label: "POWER AUTOMATE",    pct: 65, color: "#00A87D", opacity: ".85" },
+          { label: "COPILOT STUDIO",    pct: 60, color: "#00725C", opacity: ".9"  },
+          { label: "SQL", pct: 35, color: "#CEFFEF", opacity: ".5" },
+        ];
+
+        const BAR_X      = 740;   // left edge of bar track
+        const BAR_TRACK  = 320;   // full track width
+        const ROW_START  = 150;   // y of first label text
+        const ROW_STEP   = 43;    // vertical spacing between rows
+        const LABEL_OFF  = 15;    // label text y-offset from row top
+        const BAR_OFF    = 22;    // bar rect y-offset from row top
+        const PCT_OFF    = 30;    // percentage text y-offset from row top
+        const DURATION   = 900;   // animation ms
+        const DELAY_STEP = 120;   // stagger ms per bar
+
+        const ns  = "http://www.w3.org/2000/svg";
+        const grp = document.getElementById("skill-bars");
+
+        skills.forEach((s, i) => {
+          const rowY = ROW_START + i * ROW_STEP;
+
+          // Label
+          const lbl = document.createElementNS(ns, "text");
+          lbl.setAttribute("x", BAR_X);
+          lbl.setAttribute("y", rowY + LABEL_OFF);
+          lbl.setAttribute("font-size", "12");
+          lbl.setAttribute("fill", "#CEFFEF");
+          lbl.setAttribute("opacity", ".7");
+          lbl.setAttribute("letter-spacing", "1");
+          lbl.textContent = s.label;
+          grp.appendChild(lbl);
+
+          // Track background
+          const track = document.createElementNS(ns, "rect");
+          track.setAttribute("x", BAR_X);
+          track.setAttribute("y", rowY + BAR_OFF);
+          track.setAttribute("rx", "2"); track.setAttribute("ry", "2");
+          track.setAttribute("width", BAR_TRACK);
+          track.setAttribute("height", "5");
+          track.setAttribute("fill", "#00241B");
+          track.setAttribute("stroke", "#00493A");
+          track.setAttribute("stroke-width", ".5");
+          grp.appendChild(track);
+
+          // Fill bar (starts at 0)
+          const fill = document.createElementNS(ns, "rect");
+          fill.setAttribute("x", BAR_X);
+          fill.setAttribute("y", rowY + BAR_OFF);
+          fill.setAttribute("rx", "2"); fill.setAttribute("ry", "2");
+          fill.setAttribute("width", "0");
+          fill.setAttribute("height", "5");
+          fill.setAttribute("fill", s.color);
+          fill.setAttribute("opacity", s.opacity);
+          fill.setAttribute("filter", "url(#glowSm)");
+          grp.appendChild(fill);
+
+          // Percentage label (starts at 0%)
+          const pctLabel = document.createElementNS(ns, "text");
+          pctLabel.setAttribute("x", BAR_X + BAR_TRACK + 8);
+          pctLabel.setAttribute("y", rowY + PCT_OFF);
+          pctLabel.setAttribute("font-size", "11");
+          pctLabel.setAttribute("fill", s.color);
+          pctLabel.setAttribute("opacity", s.opacity);
+          pctLabel.textContent = "0%";
+          grp.appendChild(pctLabel);
+
+          // Animate after staggered delay
+          const targetW   = (s.pct / 100) * BAR_TRACK;
+          const startTime = performance.now() + i * DELAY_STEP;
+
+          function animate(now) {
+            const elapsed = now - startTime;
+            if (elapsed < 0) { requestAnimationFrame(animate); return; }
+
+            const t        = Math.min(elapsed / DURATION, 1);
+            // ease-out cubic
+            const eased    = 1 - Math.pow(1 - t, 3);
+            const currentW = eased * targetW;
+            const currentP = Math.round(eased * s.pct);
+
+            fill.setAttribute("width", currentW);
+            pctLabel.textContent = currentP + "%";
+
+            if (t < 1) requestAnimationFrame(animate);
+          }
+
+          requestAnimationFrame(animate);
+        });
+      </script>
+
+    </svg><!-- /svg -->
+
+    <!-- Custom cursor -->
+    <script>
+      const cursor = document.getElementById('cursor');
+      document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top  = e.clientY + 'px';
+      });
+      document.querySelectorAll('a, .btn-main, .btn-ghost, .proj-card, .skill-tag').forEach(el => {
+        el.addEventListener('mouseenter', () => { cursor.style.width='24px'; cursor.style.height='24px'; cursor.style.opacity='.7'; });
+        el.addEventListener('mouseleave', () => { cursor.style.width='12px'; cursor.style.height='12px'; cursor.style.opacity='1'; });
+      });
+    </script>
+
+  </body>
+</html>
